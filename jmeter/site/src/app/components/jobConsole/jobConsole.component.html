@@ -1,0 +1,65 @@
+<h3 class="title console-title">Job Console</h3>
+<div *ngIf="job">
+  <button class="k-button run" [disabled]="job.status !== '0'" (click)="run()">Start</button>
+  <button class="k-button terminate" [disabled]="job.status !== '1'" (click)="terminate()">Terminate</button>
+  <button class="k-button restart" [disabled]="job.status !== '2'" (click)="restart()">Restart</button>
+  <button class="k-button report" [disabled]="job.status !== '2'" (click)="report()">View Report</button>
+  <div class="example-wrapper container-fluid">
+    <div class="row">
+      <div class="col-xs-12 col-sm-12 example-col">
+        <kendo-splitter orientation="horizontal">
+          <kendo-splitter-pane>
+            <kendo-tabstrip>
+              <kendo-tabstrip-tab [title]="'Scenario Name'" [selected]="true">
+                <ng-template kendoTabContent>
+                  <p>
+                    {{job.scenarioName}}
+                  </p>
+                </ng-template>
+              </kendo-tabstrip-tab>
+              <kendo-tabstrip-tab [title]="'Script(jmx)'">
+                <ng-template kendoTabContent>
+                  <p>
+                    {{job.scenarioScriptName}}
+                  </p>
+                </ng-template>
+              </kendo-tabstrip-tab>
+              <kendo-tabstrip-tab [title]="'Min Heap Size'">
+                <ng-template kendoTabContent>
+                  <p>
+                    {{job.minHeap}}
+                  </p>
+                </ng-template>
+              </kendo-tabstrip-tab>
+              <kendo-tabstrip-tab [title]="'Max Heap Size'">
+                <ng-template kendoTabContent>
+                  <p>
+                    {{job.maxHeap}}
+                  </p>
+                </ng-template>
+              </kendo-tabstrip-tab>
+              <kendo-tabstrip-tab [title]="'Properties'">
+                <ng-template kendoTabContent>
+                  <p [innerHTML]="job.config | jsonFilter"></p>
+                </ng-template>
+              </kendo-tabstrip-tab>
+              <kendo-tabstrip-tab [title]="'Remote Host'" *ngIf="job.executeType === '1'">
+                <ng-template kendoTabContent>
+                  <p [innerHTML]="job.remoteHost | commaFilter"></p>
+                </ng-template>
+              </kendo-tabstrip-tab>
+            </kendo-tabstrip>
+          </kendo-splitter-pane>
+        </kendo-splitter>
+      </div>
+    </div>
+  </div>
+  <div #scrollContainer *ngIf="job && (firstStartup || job.status !== '2')" class="example-wrapper container-fluid console">
+    <p *ngFor="let line of lines">{{line}}</p>
+    <div style="text-align: center">
+      <span *ngIf="job.status === '1'" class="k-icon k-i-loading" style="font-size: 32px;"></span>
+    </div>
+  </div>
+</div>
+<app-scenarioJobAlert *ngIf="alertActive" [jobId]="alertJobId" (cancel)="cancelAlertHandler()">
+</app-scenarioJobAlert>

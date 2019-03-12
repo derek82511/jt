@@ -1,0 +1,62 @@
+<kendo-dialog (close)="closeForm()">
+  <kendo-dialog-titlebar>New Test Job</kendo-dialog-titlebar>
+
+  <form novalidate [formGroup]="editForm">
+    <div class="form-group">
+      <label for="minHeap" class="control-label">xms</label>
+      <input type="text" class="k-textbox" formControlName="minHeap" />
+    </div>
+    <div class="form-group">
+      <label for="maxHeap" class="control-label">xmx</label>
+      <input type="text" class="k-textbox" formControlName="maxHeap" />
+    </div>
+    <div class="form-group" *ngIf="propertyType === 0">
+      <label for="config" class="control-label">Properties<a href="" (click)="changePropertyType($event, 1)"><span class="k-icon k-i-css" style="font-size: 25px;"></span></a></label>
+      <div style="display: inline-block">
+        <textarea kendoTextArea style="width: 200px;margin: 0px;height: 80px;" formControlName="config" ></textarea>
+      </div>
+    </div>
+    <div formArrayName="configsForm" *ngIf="propertyType === 1">
+      <label style="vertical-align: top" for="configsForm" class="control-label">Properties<a href="" (click)="changePropertyType($event, 0)"><span class="k-icon k-i-paste-plain-text" style="font-size: 25px;"></span></a></label>
+      <div style="display: inline-block">
+        <a href="" *ngIf="configsForm.controls.length === 0" (click)="addConfig($event)"><span class="k-icon k-i-plus-outline"></span></a>
+        <div *ngFor="let control of configsForm.controls; let i=index" [formGroupName]="i">
+          <div class="form-group">
+            <input type="text" class="k-textbox" formControlName="key" />
+            :
+            <input type="text" class="k-textbox" formControlName="value" />
+            <a href="" (click)="deleteConfig($event, i)"><span class="k-icon k-i-close-outline"></span></a>
+            <a href="" *ngIf="i === configsForm.controls.length - 1" (click)="addConfig($event)"><span class="k-icon k-i-plus-outline"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="executeType" class="control-label">Execute Type</label>
+      <label>
+        <input type="radio" value="0" formControlName="executeType">
+        Local
+      </label>
+      <label>
+        <input type="radio" value="1" formControlName="executeType">
+        Remote
+      </label>
+    </div>
+    <div *ngIf="editForm.value.executeType === '1'" formArrayName="remoteHostsForm">
+      <label style="vertical-align: top" for="remoteHostsForm" class="control-label">Remote Host</label>
+      <div style="display: inline-block">
+        <div *ngFor="let control of remoteHostsForm.controls; let i=index" [formGroupName]="i">
+          <div class="form-group">
+            <input type="text" class="k-textbox" formControlName="remoteHost" />
+            <a href="" *ngIf="remoteHostsForm.controls.length > 1" (click)="deleteRemoteHost($event, i)"><span class="k-icon k-i-close-outline"></span></a>
+            <a href="" *ngIf="i === remoteHostsForm.controls.length - 1" (click)="addRemoteHost($event)"><span class="k-icon k-i-plus-outline"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  <kendo-dialog-actions>
+    <button class="k-button" (click)="onCancel($event)">Cancel</button>
+    <button class="k-button k-primary" [disabled]="!editForm.valid" (click)="onSave($event)">Save</button>
+  </kendo-dialog-actions>
+</kendo-dialog>

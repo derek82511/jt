@@ -1,0 +1,41 @@
+html, body {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: calc(100% - 2em);
+  height: 50px;
+  background-color: #0073a6;
+  color: white;
+  text-align: left;
+  line-height: 50px;
+  padding: 0 1em;
+  font-size: 1.3em;
+}
+.footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  height: 50px;
+  width: 100%;
+  background-color: #efefef;
+  color: #5f5f5f;
+  font-size: 14px;
+  text-align: center;
+  line-height: 50px;
+  z-index: -1;
+}
+.layout {
+  top: 50px;
+  bottom: 50px;
+  position: fixed !important;
+}
+
+.k-splitter-flex .k-pane{
+  max-height: none;
+  height: auto;
+}

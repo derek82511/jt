@@ -1,0 +1,18 @@
+<kendo-dialog (close)="closeForm()">
+  <kendo-dialog-titlebar>New Test Scenario</kendo-dialog-titlebar>
+
+  <form novalidate [formGroup]="editForm">
+    <div class="form-group">
+      <label for="name" class="control-label">Scenario Name</label>
+      <input type="text" class="k-textbox" formControlName="name" />
+    </div>
+    <div class="form-group">
+      <label for="uploadedFile" class="control-label">Script(jmx)</label>
+      <input type="file" (change)="onFileChange($event)" formControlName="uploadedFile" accept=".jmx">
+    </div>
+  </form>
+  <kendo-dialog-actions>
+    <button class="k-button" (click)="onCancel($event)">Cancel</button>
+    <button class="k-button k-primary" [disabled]="!editForm.valid" (click)="onSave($event)">Save</button>
+  </kendo-dialog-actions>
+</kendo-dialog>

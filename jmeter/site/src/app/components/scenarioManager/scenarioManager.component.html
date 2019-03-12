@@ -1,0 +1,26 @@
+<h3 class="title">Test Scenario</h3>
+<kendo-grid [kendoGridBinding]="scenarios" [pageSize]="gridState.take" [skip]="gridState.skip" [pageable]="true"
+  [resizable]="true" [sortable]="true" (dataStateChange)="onStateChange($event)" (remove)="removeHandler($event)" (add)="addHandler()">
+  <ng-template kendoGridToolbarTemplate>
+    <button class="k-button reload-btn" (click)="getScenarios()"><span class="k-icon k-i-reload-sm"></span></button>
+    <button kendoGridAddCommand>New</button>
+  </ng-template>
+  <kendo-grid-column field="name" title="Scenario Name" width="25%">
+  </kendo-grid-column>
+  <kendo-grid-column field="scriptName" title="Script(jmx)" width="40%">
+  </kendo-grid-column>
+  <kendo-grid-column field="createTime" title="Create Time" width="20%">
+  </kendo-grid-column>
+  <kendo-grid-command-column title="" width="15%">
+    <ng-template kendoGridCellTemplate let-dataItem>
+      <button class="k-button command-btn" (click)="addJobHandler(dataItem)">New Job</button>
+      <button kendoGridRemoveCommand class="command-btn">Delete</button>
+    </ng-template>
+  </kendo-grid-command-column>
+</kendo-grid>
+<app-scenarioEditForm *ngIf="active" (save)="saveHandler($event)" (cancel)="cancelHandler()">
+</app-scenarioEditForm>
+<app-scenarioJobEditForm *ngIf="jobActive" [scenarioId]="scenarioId" (save)="saveJobHandler($event)" (cancel)="cancelJobHandler()">
+</app-scenarioJobEditForm>
+<app-scenarioJobAlert *ngIf="alertActive" [jobId]="jobId" (cancel)="cancelAlertHandler()">
+</app-scenarioJobAlert>

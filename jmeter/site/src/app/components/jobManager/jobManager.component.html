@@ -1,0 +1,45 @@
+<h3 class="title">Test Job</h3>
+<kendo-grid [kendoGridBinding]="jobs" [pageSize]="gridState.take" [skip]="gridState.skip" [pageable]="true" [resizable]="true"
+  [sortable]="true" (dataStateChange)="onStateChange($event)">
+  <ng-template kendoGridToolbarTemplate>
+    <button class="k-button reload-btn" (click)="getJobs()"><span class="k-icon k-i-reload-sm"></span></button>
+  </ng-template>
+  <kendo-grid-column field="scenarioName" title="Scenario Name" width="12%">
+  </kendo-grid-column>
+  <kendo-grid-column field="createTime" title="Create Time" width="15%">
+  </kendo-grid-column>
+  <kendo-grid-column title="Report" width="10%">
+    <ng-template kendoGridCellTemplate let-dataItem>
+      <a *ngIf="dataItem.status === '2'" style="color: #0073a6;" href="" (click)="report($event, dataItem)">View Report</a>
+    </ng-template>
+  </kendo-grid-column>
+  <kendo-grid-column title="Heap Size" width="15%">
+    <ng-template kendoGridCellTemplate let-dataItem>
+      xms={{dataItem.minHeap}} xmx={{dataItem.maxHeap}}
+    </ng-template>
+  </kendo-grid-column>
+  <kendo-grid-column title="Custom Properties" width="13%">
+    <ng-template kendoGridCellTemplate let-dataItem>
+      <p [innerHTML]="dataItem.config | jsonFilter"></p>
+    </ng-template>
+  </kendo-grid-column>
+  <kendo-grid-column title="Remote Host" width="15%">
+    <ng-template kendoGridCellTemplate let-dataItem>
+      <p [innerHTML]="dataItem.remoteHost | commaFilter"></p>
+    </ng-template>
+  </kendo-grid-column>
+  <kendo-grid-column field="status" title="Status" width="10%">
+    <ng-template kendoGridCellTemplate let-dataItem>
+      <div [ngSwitch]="dataItem.status">
+        <p *ngSwitchCase="0">Unexecuted</p>
+        <p *ngSwitchCase="1">Executing</p>
+        <p *ngSwitchCase="2">Completed</p>
+      </div>
+    </ng-template>
+  </kendo-grid-column>
+  <kendo-grid-command-column title="" width="10%">
+    <ng-template kendoGridCellTemplate let-dataItem>
+      <button class="k-button command-btn" (click)="jobConsole(dataItem)">Console</button>
+    </ng-template>
+  </kendo-grid-command-column>
+</kendo-grid>

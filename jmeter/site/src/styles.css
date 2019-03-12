@@ -1,0 +1,115 @@
+/* You can add global styles to this file, and also import other style files */
+@import "~@progress/kendo-theme-default/dist/all.css";
+html, body {
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+  }
+  .menu {
+    background-color: #fff;
+  }
+  .menu ul {
+    -webkit-padding-start: 0;
+  }
+  .menu ul li {
+    list-style: none;
+    line-height: 35px;
+    color: #5f5f5f;
+    cursor: pointer;
+    padding-left: 20px;
+  }
+  .menu ul li:hover {
+    background-color: #eff7fb;
+    transition: background-color 0.2s;
+  }
+  .menu ul li.active {
+    color: #0060a9;
+  }
+  .menu ul li:focus {
+    outline: none;
+  }
+  .k-splitbar {
+    color: #cecece;
+    background-color: transparent;
+    margin-left: -3px;
+  }
+  .k-splitbar:active, .k-splitbar.k-state-focused {
+    color: #afafaf;
+    background: #efefef;
+  }
+  .content {
+    padding: 1em;
+  }
+  .content h3.title {
+    font-size: 30px;
+    font-weight: 400;
+    margin: 0;
+    color: #333;
+  }
+  .k-dialog .k-window-content {
+    padding: 16px 32px;
+    font-size: 18px;
+  }
+  .k-dialog .k-window-content .addImgs {
+    width: 22.4em;
+    display: inline-block;
+    vertical-align: top;
+  }
+  .k-dialog .k-window-content .addImgs img {
+    position: static;
+    border: 1px solid;
+    vertical-align: top;
+    max-width: 45%;
+    max-height: initial;
+    margin: 5px;
+  }
+  .k-dialog .k-window-content label.control-label {
+    width: 10em;
+    display: inline-block;
+    text-align: right;
+    line-height: 35px;
+    position: relative;
+  }
+  .k-dialog .k-window-content label.control-label:after {
+    content: "｜";
+  }
+  .k-dialog .store {
+    width: 1000px;
+  }
+  .k-dialog .store .form-group {
+    display: inline-block;
+    vertical-align: top;
+    width: 49%;
+  }
+  .k-dialog .store .form-group .addImgs {
+    width: 18.4em;
+    display: inline-block;
+    vertical-align: top;
+  }
+  .k-dialog .store .form-group .addImgs img {
+    position: static;
+    border: 1px solid;
+    vertical-align: top;
+    max-width: 50%;
+    max-height: 9em;
+    margin: 5px;
+  }
+  .k-switch-container .k-switch-handle {
+    width: 1.4em;
+    height: 1.4em;
+  }
+  .k-switch-container .k-switch-handle .k-switch-label-on {
+    line-height: 1.4em;
+    left: -3.4em;
+  }
+  .k-switch-container .k-switch-handle .k-switch-label-off {
+    line-height: 1.4em;
+  }
+  .k-treeview {
+    width: 30%;
+    float: left;
+    position: relative;
+  }
+  .treeGrid.k-grid {
+    width: 70%;
+  }
