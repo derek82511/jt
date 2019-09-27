@@ -1,0 +1,8 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: jt
+spec:
+  backend:
+    serviceName: jt
+    servicePort: 10080

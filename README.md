@@ -35,7 +35,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.2.0
+  derek82511/jt:1.3.0
 ```
 
 Open `http://localhost:10080` or `http://host-ip:10080` in your browser.
@@ -58,7 +58,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.2.0
+  derek82511/jt:1.3.0
 ```
 
 Open `http://localhost:10080` or `http://host-ip:10080` in your browser.
@@ -68,7 +68,7 @@ Open `http://localhost:10080` or `http://host-ip:10080` in your browser.
 Support since v1.1.0.
 
 You must prepare your JMeter worker server and start it. (Or you can use [jt-worker](https://hub.docker.com/r/derek82511/jt-worker) in your worker server)
-* Running exactly the same version of JMeter (apache-jmeter-5.0).
+* Running exactly the same version of JMeter (apache-jmeter-5.1).
 * Using the same version of Java on all systems (openjdk-8). Using different versions of Java may work but is discouraged.
 
 Following configuration is required in jmeter.properties file:
@@ -90,7 +90,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.2.0
+  derek82511/jt:1.3.0
 ```
 
 or
@@ -105,7 +105,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.2.0
+  derek82511/jt:1.3.0
 ```
 
 Then, you can assign the worker server's ip:port when creating job with remote mode.

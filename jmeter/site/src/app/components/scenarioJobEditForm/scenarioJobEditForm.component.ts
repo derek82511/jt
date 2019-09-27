@@ -37,7 +37,7 @@ export class ScenarioJobEditFormComponent {
         e.preventDefault();
 
         if (this.propertyType !== 0) {
-            this.changePropertyType(e, this.propertyType);
+            this.changePropertyType(e, 0);
         }
 
         try {

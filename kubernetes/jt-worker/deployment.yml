@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jt-worker
+  labels:
+    app: jt-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jt-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: jt-worker
+    spec:
+      containers:
+        - env:
+            - name: TZ
+              value: Asia/Taipei
+            - name: SERVER_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          name: jt-worker
+          image: derek82511/jt-worker:1.3.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: '2'
+              memory: 5120Mi
+      nodeSelector:
+        jt: 'worker'
