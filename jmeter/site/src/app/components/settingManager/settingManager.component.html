@@ -1,0 +1,31 @@
+<h3 class="title">Setting</h3>
+<form novalidate [formGroup]="editForm">
+  <div class="form-group">
+    <label for="executeType" class="control-label">Execute Type</label>
+    <label>
+      <input type="radio" value="0" formControlName="executeType">
+      Local
+    </label>
+    <label>
+      <input type="radio" value="1" formControlName="executeType">
+      Remote
+    </label>
+  </div>
+  <div *ngIf="editForm.value.executeType === '1'" formArrayName="remoteHostsForm">
+    <label style="vertical-align: top" for="remoteHostsForm" class="control-label">Remote Host</label>
+    <div style="display: inline-block">
+      <div *ngFor="let control of remoteHostsForm.controls; let i=index" [formGroupName]="i">
+        <div class="form-group">
+          <input type="text" class="k-textbox" formControlName="remoteHost" />
+          <a href="" *ngIf="remoteHostsForm.controls.length > 1" (click)="deleteRemoteHost($event, i)"><span
+              class="k-icon k-i-close-outline"></span></a>
+          <a href="" *ngIf="i === remoteHostsForm.controls.length - 1" (click)="addRemoteHost($event)"><span
+              class="k-icon k-i-plus-outline"></span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+<kendo-dialog-actions>
+  <button class="k-button k-primary" [disabled]="!editForm.valid" (click)="onSave($event)">Save</button>
+</kendo-dialog-actions>

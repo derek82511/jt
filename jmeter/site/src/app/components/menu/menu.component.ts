@@ -12,7 +12,8 @@ export class MenuComponent implements OnInit {
     ngOnInit() {
         this.menus = [
             { url: '/scenario', name: 'Test Scenario' },
-            { url: '/job', name: 'Test Job' }
+            { url: '/job', name: 'Test Job' },
+            { url: '/setting', name: 'Setting' }
         ];
     }
 

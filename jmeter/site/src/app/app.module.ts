@@ -25,6 +25,7 @@ import { ScenarioJobEditFormComponent } from './components/scenarioJobEditForm/s
 import { ScenarioJobAlertComponent } from './components/scenarioJobAlert/scenarioJobAlert.component';
 import { JobManagerComponent } from './components/jobManager/jobManager.component';
 import { JobConsoleComponent } from './components/jobConsole/jobConsole.component';
+import { SettingManagerComponent } from './components/settingManager/settingManager.component';
 import { MenuComponent } from './components/menu/menu.component';
 
 @NgModule({
@@ -36,6 +37,7 @@ import { MenuComponent } from './components/menu/menu.component';
     ScenarioJobAlertComponent,
     JobManagerComponent,
     JobConsoleComponent,
+    SettingManagerComponent,
     MenuComponent,
     JsonPipe,
     CommaPipe,

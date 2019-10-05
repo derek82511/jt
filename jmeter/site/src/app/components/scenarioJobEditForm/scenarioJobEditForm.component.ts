@@ -9,18 +9,9 @@ import { Validators, FormGroup, FormControl, FormArray } from '@angular/forms';
 export class ScenarioJobEditFormComponent {
     public configsForm = new FormArray([]);
 
-    public remoteHostsForm = new FormArray([new FormGroup({
-        'remoteHost': new FormControl(''),
-    })]);
+    public remoteHostsForm: FormArray;
 
-    public editForm: FormGroup = new FormGroup({
-        'minHeap': new FormControl('', Validators.required),
-        'maxHeap': new FormControl('', Validators.required),
-        'config': new FormControl('{}'),
-        'configsForm': this.configsForm,
-        'executeType': new FormControl('0'),
-        'remoteHostsForm': this.remoteHostsForm,
-    });
+    public editForm: FormGroup;
 
     public propertyType: number = 0;
 
@@ -30,7 +21,43 @@ export class ScenarioJobEditFormComponent {
     @Output() save: EventEmitter<any> = new EventEmitter();
 
     constructor() {
+        let remoteHost = localStorage.getItem('remoteHost');
 
+        if (remoteHost) {
+            let hosts = remoteHost.split(';');
+
+            this.remoteHostsForm = new FormArray([]);
+
+            hosts.forEach(host => {
+                if (host) {
+                    this.remoteHostsForm.push(new FormGroup({
+                        'remoteHost': new FormControl(host),
+                    }));
+                }
+            });
+
+            this.editForm = new FormGroup({
+                'minHeap': new FormControl('', Validators.required),
+                'maxHeap': new FormControl('', Validators.required),
+                'config': new FormControl('{}'),
+                'configsForm': this.configsForm,
+                'executeType': new FormControl('1'),
+                'remoteHostsForm': this.remoteHostsForm,
+            });
+        } else {
+            this.remoteHostsForm = new FormArray([new FormGroup({
+                'remoteHost': new FormControl(''),
+            })]);
+
+            this.editForm = new FormGroup({
+                'minHeap': new FormControl('', Validators.required),
+                'maxHeap': new FormControl('', Validators.required),
+                'config': new FormControl('{}'),
+                'configsForm': this.configsForm,
+                'executeType': new FormControl('0'),
+                'remoteHostsForm': this.remoteHostsForm,
+            });
+        }
     }
 
     public onSave(e): void {
