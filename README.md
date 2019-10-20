@@ -35,7 +35,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.1
+  derek82511/jt:1.3.2
 ```
 
 Open `http://localhost:10080` or `http://host-ip:10080` in your browser.
@@ -58,7 +58,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.1
+  derek82511/jt:1.3.2
 ```
 
 Open `http://localhost:10080` or `http://host-ip:10080` in your browser.
@@ -90,7 +90,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.1
+  derek82511/jt:1.3.2
 ```
 
 or
@@ -105,7 +105,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.1
+  derek82511/jt:1.3.2
 ```
 
 Then, you can assign the worker server's ip:port when creating job with remote mode.

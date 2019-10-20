@@ -351,7 +351,10 @@ func SetupApi(app *iris.Application) {
 
 			reportFolderName := job.CreateTime.Format("20060102150405") + "_" + scenario.Name + "_report"
 
-			jvmArgs := "-Xms" + job.MinHeap + " -Xmx" + job.MaxHeap
+			jvmArgs := ""
+			if job.MinHeap != "-1" && job.MaxHeap != "-1" {
+				jvmArgs = "JVM_ARGS=\"-Xms" + job.MinHeap + " -Xmx" + job.MaxHeap + "\""
+			}
 
 			var configMap map[string]string
 

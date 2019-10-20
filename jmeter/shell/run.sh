@@ -7,7 +7,7 @@ report_folder_name=$4
 config_args=$5
 remote_host_config=$6
 
-if [ -z "${jvm_args}" ] || [ -z "${script_name}" ] || [ -z "${jmeter_root_folder}" ] || [ -z "${report_folder_name}" ] ; then
+if [ -z "${script_name}" ] || [ -z "${jmeter_root_folder}" ] || [ -z "${report_folder_name}" ] ; then
     echo "Invalid arguments"
 else
     script_file="${jmeter_root_folder}/scripts/${script_name}"
@@ -26,7 +26,7 @@ else
     mkdir ${report_folder}
     mkdir ${report_detail_folder}
 
-    cmd="JVM_ARGS=\"${jvm_args}\" jmeter ${config_args} -n -t ${script_file} ${remote_host_config} -l ${report_log_xml} -j ${jmeter_log} -e -o ${report_detail_folder}"
+    cmd="${jvm_args} jmeter ${config_args} -n -t ${script_file} ${remote_host_config} -l ${report_log_xml} -j ${jmeter_log} -e -o ${report_detail_folder}"
 
     echo $cmd
 
