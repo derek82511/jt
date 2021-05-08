@@ -33,7 +33,7 @@
     "@progress/kendo-drawing": "^1.0.0",
     "@progress/kendo-theme-default": "latest",
     "core-js": "^2.5.4",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.21",
     "moment": "^2.22.2",
     "rxjs": "^6.2.1",
     "rxjs-compat": "^6.0.0",
