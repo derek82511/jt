@@ -1,0 +1,15 @@
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.host-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.actions {
+    margin-top: 20px;
+}

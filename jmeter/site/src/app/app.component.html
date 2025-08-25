@@ -1,27 +1,24 @@
 <div class="header">
     JT Load Test {{version}}
 </div>
-<kendo-splitter *ngIf="isDefault" orientation="vertical" class="layout">
-  <kendo-splitter-pane>
-    <kendo-splitter>
-      <kendo-splitter-pane size="140px" class="menu">
+
+<!-- Default Layout with Sidebar -->
+<div class="main-container" *ngIf="isDefault">
+    <div class="sidebar">
         <app-menu></app-menu>
-      </kendo-splitter-pane>
-      <kendo-splitter-pane class="content">
+    </div>
+    <div class="content">
         <router-outlet></router-outlet>
-      </kendo-splitter-pane>
-    </kendo-splitter>
-  </kendo-splitter-pane>
-</kendo-splitter>
-<kendo-splitter *ngIf="!isDefault" orientation="vertical" class="layout">
-    <kendo-splitter-pane>
-      <kendo-splitter>
-        <kendo-splitter-pane class="content">
-          <router-outlet name="blank"></router-outlet>
-        </kendo-splitter-pane>
-      </kendo-splitter>
-    </kendo-splitter-pane>
-  </kendo-splitter>
+    </div>
+</div>
+
+<!-- Blank Layout without Sidebar -->
+<div class="main-container" *ngIf="!isDefault">
+    <div class="content">
+        <router-outlet name="blank"></router-outlet>
+    </div>
+</div>
+
 <div class="footer">
-  Designed by Derek Chang during 2018.
+    Designed by Derek Chang during 2018.
 </div>

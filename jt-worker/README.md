@@ -8,7 +8,7 @@ docker run -it \
   -e "TZ=Asia/Taipei" \
   -e "SERVER_HOST=[YOUR HOST IP]" \
   --name jt-worker \
-  derek82511/jt-worker:1.3.0
+  derek82511/jt-worker:2.0.0
 ```
 
 ## Using host networking
@@ -26,7 +26,7 @@ docker run -it \
   -e "TZ=Asia/Taipei" \
   -e "SERVER_HOST=[YOUR HOST IP]" \
   --name jt-worker \
-  derek82511/jt-worker:1.3.0
+  derek82511/jt-worker:2.0.0
 ```
 
 ## Reference image

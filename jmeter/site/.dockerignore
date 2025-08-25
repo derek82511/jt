@@ -1,0 +1,5 @@
+node_modules
+dist
+.angular
+README.md
+.gitignore

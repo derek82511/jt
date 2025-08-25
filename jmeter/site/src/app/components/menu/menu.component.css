@@ -1,0 +1,8 @@
+.active-list-item {
+    color: #3f51b5; /* Angular Material primary color */
+    background-color: rgba(63, 81, 181, 0.1);
+}
+
+.active-list-item mat-icon {
+    color: #3f51b5;
+}

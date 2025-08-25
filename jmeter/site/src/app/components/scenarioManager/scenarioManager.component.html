@@ -1,26 +1,50 @@
-<h3 class="title">Test Scenario</h3>
-<kendo-grid [kendoGridBinding]="scenarios" [pageSize]="gridState.take" [skip]="gridState.skip" [pageable]="true"
-  [resizable]="true" [sortable]="true" (dataStateChange)="onStateChange($event)" (remove)="removeHandler($event)" (add)="addHandler()">
-  <ng-template kendoGridToolbarTemplate>
-    <button class="k-button reload-btn" (click)="getScenarios()"><span class="k-icon k-i-reload-sm"></span></button>
-    <button kendoGridAddCommand>New</button>
-  </ng-template>
-  <kendo-grid-column field="name" title="Scenario Name" width="25%">
-  </kendo-grid-column>
-  <kendo-grid-column field="scriptName" title="Script(jmx)" width="40%">
-  </kendo-grid-column>
-  <kendo-grid-column field="createTime" title="Create Time" width="20%">
-  </kendo-grid-column>
-  <kendo-grid-command-column title="" width="15%">
-    <ng-template kendoGridCellTemplate let-dataItem>
-      <button class="k-button command-btn" (click)="addJobHandler(dataItem)">New Job</button>
-      <button kendoGridRemoveCommand class="command-btn">Delete</button>
-    </ng-template>
-  </kendo-grid-command-column>
-</kendo-grid>
-<app-scenarioEditForm *ngIf="active" (save)="saveHandler($event)" (cancel)="cancelHandler()">
-</app-scenarioEditForm>
-<app-scenarioJobEditForm *ngIf="jobActive" [scenarioId]="scenarioId" (save)="saveJobHandler($event)" (cancel)="cancelJobHandler()">
-</app-scenarioJobEditForm>
-<app-scenarioJobAlert *ngIf="alertActive" [jobId]="jobId" (cancel)="cancelAlertHandler()">
-</app-scenarioJobAlert>
+<div class="page-container">
+    <div class="page-header">
+        <h3 class="page-title">Test Scenario</h3>
+        <div class="header-actions">
+            <button mat-icon-button (click)="getScenarios()">
+                <mat-icon>refresh</mat-icon>
+            </button>
+            <button mat-flat-button color="primary" (click)="addHandler()">New Scenario</button>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+
+            <!-- Name Column -->
+            <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef> Scenario Name </th>
+                <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+            </ng-container>
+
+            <!-- Script Name Column -->
+            <ng-container matColumnDef="scriptName">
+                <th mat-header-cell *matHeaderCellDef> Script(jmx) </th>
+                <td mat-cell *matCellDef="let element"> {{element.scriptName}} </td>
+            </ng-container>
+
+            <!-- Create Time Column -->
+            <ng-container matColumnDef="createTime">
+                <th mat-header-cell *matHeaderCellDef> Create Time </th>
+                <td mat-cell *matCellDef="let element"> {{element.createTime}} </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let element" align="right" class="action-cell">
+                    <button mat-stroked-button color="primary" (click)="addJobHandler(element)">New Job</button>
+                    <button mat-icon-button color="warn" (click)="removeHandler(element)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[10, 20, 50]" showFirstLastButtons></mat-paginator>
+    </div>
+</div>

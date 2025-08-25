@@ -5,258 +5,174 @@ import (
 	"derek82511/jt/config"
 	"derek82511/jt/model"
 	"derek82511/jt/service/dataprovider"
-	"derek82511/jt/service/file"
 	"derek82511/jt/service/log"
-	"derek82511/jt/service/shelljob/task"
 	"derek82511/jt/service/web/socket"
-	"os"
+	"encoding/json"
+	"fmt"
 	"os/exec"
-	"regexp"
-	"strconv"
+	"path"
+	"sync"
 	"syscall"
-	"unicode/utf8"
+	"time"
 
-	"github.com/Clever/csvlint"
+	"github.com/gorilla/websocket"
+	"gorm.io/gorm"
 )
 
-func runJobOnError(jobID string, msg string) {
-	conn := socket.GetConnection(jobID)
+var (
+	runningCmds = make(map[string]*exec.Cmd)
+	cmdMu       sync.Mutex
+)
 
-	log.Logger.Error(msg)
-	(*conn).Emit("console", msg)
-
-	job := &model.Job{}
-
-	if errs := dataprovider.GetInstance().Where("ID = ?", jobID).First(job).GetErrors(); len(errs) > 0 {
-		log.Logger.Error("error: " + errs[0].Error())
-
-		(*conn).Emit("finish", "ok")
-		return
-	}
-
-	job.Status = model.Job_Status_Completed
-
-	if errs := dataprovider.GetInstance().Save(job).GetErrors(); len(errs) > 0 {
-		log.Logger.Error("error: " + errs[0].Error())
-
-		(*conn).Emit("finish", "ok")
-		return
-	}
-
-	(*conn).Emit("finish", "ok")
+func setCmd(jobId string, cmd *exec.Cmd) {
+	cmdMu.Lock()
+	defer cmdMu.Unlock()
+	runningCmds[jobId] = cmd
 }
 
-func DoRunJob(jobID string, args ...string) {
-	conn := socket.GetConnection(jobID)
-
-	cmd := exec.Command("/bin/sh", config.JMETER_SHELL_FOLDER+"/run.sh", args[0], args[1], args[2], args[3], args[4], args[5])
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-
-	task.SetCmd(jobID, cmd)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		runJobOnError(jobID, "StdoutPipe error: "+err.Error())
-		return
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		runJobOnError(jobID, "StderrPipe error: "+err.Error())
-		return
-	}
-
-	if err := cmd.Start(); err != nil {
-		runJobOnError(jobID, "Start error: "+err.Error())
-		return
-	}
-
-	scannerOut := bufio.NewScanner(stdout)
-	scannerOut.Split(bufio.ScanLines)
-	for scannerOut.Scan() {
-		text := scannerOut.Text()
-
-		msg := "[INFO] " + text
-		log.Logger.Info(msg)
-		(*conn).Emit("console", msg)
-	}
-
-	scannerErr := bufio.NewScanner(stderr)
-	scannerErr.Split(bufio.ScanLines)
-	for scannerErr.Scan() {
-		text := scannerErr.Text()
-
-		msg := "[ERROR] " + text
-		log.Logger.Error(msg)
-		(*conn).Emit("console", msg)
-	}
-
-	if err := cmd.Wait(); err != nil {
-		log.Logger.Error(err.Error())
-		(*conn).Emit("console", err.Error())
-
-		RecoveryReport(jobID)
-	}
-
-	task.DeleteCmd(jobID)
-
-	job := &model.Job{}
-
-	if errs := dataprovider.GetInstance().Where("ID = ?", jobID).First(job).GetErrors(); len(errs) > 0 {
-		msg := "[DATA ERROR] " + errs[0].Error()
-		log.Logger.Error(msg)
-		(*conn).Emit("console", msg)
-		return
-	}
-
-	job.Status = model.Job_Status_Completed
-
-	if errs := dataprovider.GetInstance().Save(job).GetErrors(); len(errs) > 0 {
-		msg := "[DATA ERROR] " + errs[0].Error()
-		log.Logger.Error(msg)
-		(*conn).Emit("console", msg)
-		return
-	}
-
-	endMsg := "[INFO] Job " + job.ID + " finished."
-	log.Logger.Info(endMsg)
-	(*conn).Emit("console", endMsg)
-
-	(*conn).Emit("finish", "ok")
-
-	socket.ReleaseConnection(job.ID)
+func getCmd(jobId string) *exec.Cmd {
+	cmdMu.Lock()
+	defer cmdMu.Unlock()
+	return runningCmds[jobId]
 }
 
-func RecoveryReport(jobID string) {
-	job := &model.Job{}
-	scenario := &model.Scenario{}
+func deleteCmd(jobId string) {
+	cmdMu.Lock()
+	defer cmdMu.Unlock()
+	delete(runningCmds, jobId)
+}
 
-	if errs := dataprovider.GetInstance().Where("ID = ?", jobID).First(job).GetErrors(); len(errs) > 0 {
-		msg := "[DATA ERROR] " + errs[0].Error()
-		log.Logger.Error(msg)
-		return
-	}
-
-	if errs := dataprovider.GetInstance().Where("ID = ?", job.ScenarioID).First(scenario).GetErrors(); len(errs) > 0 {
-		msg := "[DATA ERROR] " + errs[0].Error()
-		log.Logger.Error(msg)
-		return
-	}
-
-	conn := socket.GetConnection(jobID)
-
-	reportFolderName := job.CreateTime.Format("20060102150405") + "_" + scenario.Name + "_report"
-	jobReportFolder := config.JMETER_REPORTS_FOLDER + "/" + reportFolderName
-	logFilePath := jobReportFolder + "/log.csv"
-	detailPath := jobReportFolder + "/detail"
-
-	fDetail, err := os.Open(detailPath + "/main.html")
-	if err == nil {
-		defer fDetail.Close()
-		return
-	}
-
-	fLog, err := os.Open(logFilePath)
-	if err != nil {
-		msg := "Log file error: " + err.Error()
-		log.Logger.Error(msg)
-		if conn != nil {
-			(*conn).Emit("console", msg)
-		}
-	}
-	defer fLog.Close()
-
-	comma, _ := utf8.DecodeRuneInString(",")
-
-	errs, _, _ := csvlint.Validate(fLog, comma, false)
-
-	if len(errs) != 0 {
-		regex := regexp.MustCompile("#(.*?) ")
-
-		for i := len(errs) - 1; i >= 0; i-- {
-			match := regex.FindStringSubmatch(errs[i].Error())
-			lineNum, _ := strconv.Atoi(match[1])
-			if err := file.RemoveLines(logFilePath, lineNum+1, 1); err != nil {
-				msg := "RemoveLines error: " + err.Error()
-				log.Logger.Error(msg)
-				if conn != nil {
-					(*conn).Emit("console", msg)
-				}
-				return
-			}
-		}
-	}
-
-	cmd := exec.Command("/bin/sh", config.JMETER_SHELL_FOLDER+"/recovery.sh", config.JMETER_ROOT_FOLDER, reportFolderName)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		msg := "StdoutPipe error: " + err.Error()
-		log.Logger.Error(msg)
-		if conn != nil {
-			(*conn).Emit("console", msg)
-		}
-		return
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		msg := "StderrPipe error: " + err.Error()
-		log.Logger.Error(msg)
-		if conn != nil {
-			(*conn).Emit("console", msg)
-		}
-		return
-	}
-
-	if err := cmd.Start(); err != nil {
-		msg := "Start error: " + err.Error()
-		log.Logger.Error(msg)
-		if conn != nil {
-			(*conn).Emit("console", msg)
-		}
-		return
-	}
-
-	scannerOut := bufio.NewScanner(stdout)
-	scannerOut.Split(bufio.ScanLines)
-	for scannerOut.Scan() {
-		text := scannerOut.Text()
-
-		msg := "[INFO] " + text
-		log.Logger.Info(msg)
-		if conn != nil {
-			(*conn).Emit("console", msg)
-		}
-	}
-
-	scannerErr := bufio.NewScanner(stderr)
-	scannerErr.Split(bufio.ScanLines)
-	for scannerErr.Scan() {
-		text := scannerErr.Text()
-
-		msg := "[ERROR] " + text
-		log.Logger.Error(msg)
-		if conn != nil {
-			(*conn).Emit("console", msg)
-		}
-	}
-
-	if err := cmd.Wait(); err != nil {
-		log.Logger.Error(err.Error())
-		if conn != nil {
-			(*conn).Emit("console", err.Error())
-		}
-	}
-
-	recoveryMsg := "Finish recovery report."
-	log.Logger.Info(recoveryMsg)
+func writeMsg(jobId string, event string, msg string) {
+	conn := socket.GetConnection(jobId)
 	if conn != nil {
-		(*conn).Emit("console", recoveryMsg)
+		log.WebLogger.Info("write to ws: ", jobId, " ", event, " ", msg)
+		resp := struct {
+			Event   string `json:"event"`
+			Payload string `json:"payload"`
+		}{
+			Event:   event,
+			Payload: msg,
+		}
+		respBytes, _ := json.Marshal(resp)
+		err := conn.WriteMessage(websocket.TextMessage, respBytes)
+		if err != nil {
+			log.WebLogger.Error("write to ws error: ", err)
+			socket.RemoveConnection(jobId)
+		}
 	}
+}
+
+func Execute(job *model.Job) {
+	conn := socket.GetConnection(job.ID)
+	if conn == nil {
+		log.WebLogger.Info("ws conn is nil, stop to execute job ", job.ID)
+		return
+	}
+
+	scenario := &model.Scenario{}
+	if err := dataprovider.GetInstance().Where("ID = ?", job.ScenarioID).First(scenario).Error; err != nil {
+		writeMsg(job.ID, "console", "find scenario failed: "+err.Error())
+		dataprovider.GetInstance().Model(&model.Job{}).Where("ID = ?", job.ID).Update("status", 2)
+		writeMsg(job.ID, "finish", "ok")
+		return
+	}
+
+	writeMsg(job.ID, "console", "start running job "+job.ScenarioName)
+	dataprovider.GetInstance().Model(&model.Job{}).Where("ID = ?", job.ID).Update("status", 1)
+
+	// Prepare arguments for run.sh
+	jvmArgs := fmt.Sprintf("JVM_ARGS=\"-Xms%s -Xmx%s\"", job.MinHeap, job.MaxHeap)
+	scriptName := scenario.ScriptName
+	jmeterRootFolder := config.JMETER_ROOT_FOLDER
+	reportFolderName := job.CreateTime.Format("20060102150405") + "_" + scenario.Name + "_report"
+
+	var configMap map[string]string
+	configArgs := ""
+	if err := json.Unmarshal([]byte(job.Config), &configMap); err == nil {
+		propSyntax := "-J"
+		if job.ExecuteType == model.Job_ExecuteType_Remote {
+			propSyntax = "-G"
+		}
+		for k, v := range configMap {
+			configArgs += fmt.Sprintf(" %s%s=%s", propSyntax, k, v)
+		}
+	}
+
+	remoteHostConfig := ""
+	if job.ExecuteType == model.Job_ExecuteType_Remote {
+		remoteHostConfig = "-R " + job.RemoteHost
+	}
+
+	cmd := exec.Command("/bin/sh", path.Join(config.JMETER_SHELL_FOLDER, "run.sh"),
+		jvmArgs,
+		scriptName,
+		jmeterRootFolder,
+		reportFolderName,
+		configArgs,
+		remoteHostConfig,
+	)
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	setCmd(job.ID, cmd)
+
+	stdout, _ := cmd.StdoutPipe()
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		writeMsg(job.ID, "console", "Failed to start run.sh: "+err.Error())
+		dataprovider.GetInstance().Model(&model.Job{}).Where("ID = ?", job.ID).Update("status", 2)
+		deleteCmd(job.ID)
+		writeMsg(job.ID, "finish", "ok")
+		return
+	}
+	dataprovider.GetInstance().Model(&model.Job{}).Where("ID = ?", job.ID).Update("pid", cmd.Process.Pid)
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		m := scanner.Text()
+		writeMsg(job.ID, "console", m)
+	}
+
+	cmd.Wait()
+	deleteCmd(job.ID)
+
+	writeMsg(job.ID, "console", "finish job "+job.ScenarioName)
+	writeMsg(job.ID, "finish", "ok")
+	dataprovider.GetInstance().Model(&model.Job{}).Where("ID = ?", job.ID).Update("status", 2)
+}
+
+func Terminate(jobId string) (isRecover bool) {
+	var job model.Job
+	if err := dataprovider.GetInstance().Where("ID = ?", jobId).First(&job).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			writeMsg(jobId, "console", "job is not exist")
+		}
+		return false
+	}
+
+	if job.Status != 1 {
+		writeMsg(jobId, "console", "job is not running")
+		return false
+	}
+
+	log.WebLogger.Info("terminate job ", job.ID, " pid: ", job.Pid)
+	cmd := getCmd(job.ID)
+	if cmd != nil && cmd.Process != nil {
+		// Kill the entire process group
+		if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
+			writeMsg(jobId, "console", "Failed to kill process group: "+err.Error())
+		} else {
+			writeMsg(jobId, "console", "Job process terminated.")
+		}
+	} else {
+		writeMsg(jobId, "console", "Job process not found, could not terminate.")
+	}
+
+	dataprovider.GetInstance().Model(&model.Job{}).Where("ID = ?", job.ID).Update("status", 2)
+	now := time.Now()
+	dataprovider.GetInstance().Model(&model.Job{}).Where("ID = ?", job.ID).Update("finish_time", &now)
+
+	// Since we are now using the robust process group kill,
+	// manual recovery is less of an issue. Returning true for compatibility.
+	return true
 }

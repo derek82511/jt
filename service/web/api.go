@@ -4,40 +4,45 @@ import (
 	"derek82511/jt/config"
 	"derek82511/jt/model"
 	"derek82511/jt/service/dataprovider"
-	"derek82511/jt/service/log"
 	"derek82511/jt/service/shelljob"
-	"derek82511/jt/service/shelljob/task"
-	"derek82511/jt/service/web/socket"
 	"encoding/json"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strconv"
-	"syscall"
 	"time"
 
 	uuid "github.com/iris-contrib/go.uuid"
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
+	"gorm.io/gorm"
 )
 
 func SetupApi(app *iris.Application) {
-	crs := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{iris.MethodGet, iris.MethodPost, iris.MethodDelete, iris.MethodOptions},
-		AllowCredentials: true,
-	})
+	party := app.Party("/api")
+	party.AllowMethods(iris.MethodOptions) // <<< Allow OPTIONS method for the entire party.
+	party.Use(func(ctx iris.Context) {
+		ctx.Header("Access-Control-Allow-Origin", "*")
+		ctx.Header("Access-Control-Allow-Credentials", "true")
 
-	party := app.Party("/api", crs).AllowMethods(iris.MethodOptions)
+		if ctx.Method() == iris.MethodOptions {
+			ctx.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
+			ctx.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			ctx.StatusCode(iris.StatusNoContent)
+			return
+		}
+
+		ctx.Next()
+	})
+	party.Use(iris.Compression)
 	{
 		party.Get("/scenario", func(ctx iris.Context) {
 			scenarios := &[]*model.Scenario{}
 
-			if errs := dataprovider.GetInstance().Order("CREATE_TIME desc").Find(&scenarios).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Order("CREATE_TIME desc").Find(&scenarios).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -119,10 +124,10 @@ func SetupApi(app *iris.Application) {
 				CreateTime: &now,
 			}
 
-			if errs := dataprovider.GetInstance().Create(scenario).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Create(scenario).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -136,10 +141,10 @@ func SetupApi(app *iris.Application) {
 
 			scenario := &model.Scenario{}
 
-			if errs := dataprovider.GetInstance().Where("ID = ?", id).First(scenario).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Where("ID = ?", id).First(scenario).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -156,10 +161,10 @@ func SetupApi(app *iris.Application) {
 
 			scenario.Status = model.Scenario_Status_Deleted
 
-			if errs := dataprovider.GetInstance().Save(scenario).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Save(scenario).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -170,10 +175,10 @@ func SetupApi(app *iris.Application) {
 		party.Get("/job", func(ctx iris.Context) {
 			jobs := &[]*model.Job{}
 
-			if errs := dataprovider.GetInstance().Order("CREATE_TIME desc").Find(&jobs).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Order("CREATE_TIME desc").Find(&jobs).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -206,18 +211,18 @@ func SetupApi(app *iris.Application) {
 			job := &model.Job{}
 			scenario := &model.Scenario{}
 
-			if errs := dataprovider.GetInstance().Where("ID = ?", id).First(job).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Where("ID = ?", id).First(job).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
 
-			if errs := dataprovider.GetInstance().Where("ID = ?", job.ScenarioID).First(scenario).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Where("ID = ?", job.ScenarioID).First(scenario).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -240,9 +245,16 @@ func SetupApi(app *iris.Application) {
 		})
 
 		party.Post("/job", func(ctx iris.Context) {
-			jobRq := &model.JobRq{}
+			var jobRq struct {
+				ScenarioID  string            `json:"scenarioId"`
+				Config      map[string]string `json:"config"`
+				MaxHeap     string            `json:"maxHeap"`
+				MinHeap     string            `json:"minHeap"`
+				ExecuteType int               `json:"executeType"`
+				RemoteHost  string            `json:"remoteHost"`
+			}
 
-			if err := ctx.ReadJSON(jobRq); err != nil {
+			if err := ctx.ReadJSON(&jobRq); err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
 					"error": err.Error(),
@@ -252,10 +264,10 @@ func SetupApi(app *iris.Application) {
 
 			scenario := &model.Scenario{}
 
-			if errs := dataprovider.GetInstance().Where("ID = ?", jobRq.ScenarioID).First(scenario).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Where("ID = ?", jobRq.ScenarioID).First(scenario).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -271,9 +283,13 @@ func SetupApi(app *iris.Application) {
 				return
 			}
 
-			config := jobRq.Config
-			if config == "" {
-				config = "{}"
+			configBytes, err := json.Marshal(jobRq.Config)
+			if err != nil {
+				ctx.StatusCode(iris.StatusBadRequest)
+				ctx.JSON(iris.Map{
+					"error": err.Error(),
+				})
+				return
 			}
 
 			remoteHost := ""
@@ -287,18 +303,18 @@ func SetupApi(app *iris.Application) {
 				ScenarioName: scenario.Name,
 				MinHeap:      jobRq.MinHeap,
 				MaxHeap:      jobRq.MaxHeap,
-				Config:       config,
+				Config:       string(configBytes),
 				Status:       model.Job_Status_Created,
 				ExecuteType:  jobRq.ExecuteType,
 				RemoteHost:   remoteHost,
-				ReportPath:   "/jmeter/reports/" + now.Format("20060102150405") + "_" + scenario.Name + "_report/detail/index.html",
+				ReportPath:   "/jmeter/reports/" + now.Format("20060102150405") + "_" + scenario.Name + "_report/detail/main.html",
 				CreateTime:   &now,
 			}
 
-			if errs := dataprovider.GetInstance().Create(job).GetErrors(); len(errs) > 0 {
+			if err := dataprovider.GetInstance().Create(job).Error; err != nil {
 				ctx.StatusCode(iris.StatusBadRequest)
 				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
+					"error": err.Error(),
 				})
 				return
 			}
@@ -309,162 +325,96 @@ func SetupApi(app *iris.Application) {
 			})
 		})
 
-		party.Post("/job/run/{id}", func(ctx iris.Context) {
-			id := ctx.Params().Get("id")
+		party.Post("/job/run/:id", func(ctx iris.Context) {
+			jobId := ctx.Params().Get("id")
 
-			job := &model.Job{}
-			scenario := &model.Scenario{}
-
-			if errs := dataprovider.GetInstance().Where("ID = ?", id).First(job).GetErrors(); len(errs) > 0 {
-				ctx.StatusCode(iris.StatusBadRequest)
-				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
-				})
-				return
-			}
-
-			if errs := dataprovider.GetInstance().Where("ID = ?", job.ScenarioID).First(scenario).GetErrors(); len(errs) > 0 {
-				ctx.StatusCode(iris.StatusBadRequest)
-				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
-				})
-				return
-			}
-
-			if job.Status != model.Job_Status_Created {
-				ctx.StatusCode(iris.StatusBadRequest)
-				ctx.JSON(iris.Map{
-					"error": "invalid operation",
-				})
-				return
-			}
-
-			job.Status = model.Job_Status_InProgress
-
-			if errs := dataprovider.GetInstance().Save(job).GetErrors(); len(errs) > 0 {
-				ctx.StatusCode(iris.StatusBadRequest)
-				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
-				})
-				return
-			}
-
-			reportFolderName := job.CreateTime.Format("20060102150405") + "_" + scenario.Name + "_report"
-
-			jvmArgs := ""
-			if job.MinHeap != "-1" && job.MaxHeap != "-1" {
-				jvmArgs = "JVM_ARGS=\"-Xms" + job.MinHeap + " -Xmx" + job.MaxHeap + "\""
-			}
-
-			var configMap map[string]string
-
-			if err := json.Unmarshal([]byte(job.Config), &configMap); err != nil {
-				ctx.StatusCode(iris.StatusBadRequest)
+			var job model.Job
+			if err := dataprovider.GetInstance().Where("ID = ?", jobId).First(&job).Error; err != nil {
+				if err == gorm.ErrRecordNotFound {
+					ctx.StatusCode(iris.StatusNotFound)
+					ctx.JSON(iris.Map{
+						"error": "job is not exist",
+					})
+					return
+				}
+				ctx.StatusCode(iris.StatusInternalServerError)
 				ctx.JSON(iris.Map{
 					"error": err.Error(),
 				})
 				return
 			}
 
-			configArgs := ""
-
-			propertySyntax := " -J"
-			remoteHostConfig := ""
-			if job.ExecuteType == model.Job_ExecuteType_Remote {
-				propertySyntax = " -G"
-				remoteHostConfig = "-R " + job.RemoteHost
-			}
-
-			for k, v := range configMap {
-				configArgs += propertySyntax + k + "=" + v
-			}
-
-			go shelljob.DoRunJob(job.ID, jvmArgs, scenario.ScriptName, config.JMETER_ROOT_FOLDER, reportFolderName, configArgs, remoteHostConfig)
+			go shelljob.Execute(&job)
 
 			ctx.StatusCode(iris.StatusOK)
-			ctx.JSON(iris.Map{})
 		})
 
-		party.Post("/job/terminate/{id}", func(ctx iris.Context) {
-			id := ctx.Params().Get("id")
+		party.Post("/job/terminate/:id", func(ctx iris.Context) {
+			jobId := ctx.Params().Get("id")
+			isRecover := shelljob.Terminate(jobId)
 
-			job := &model.Job{}
-
-			if errs := dataprovider.GetInstance().Where("ID = ?", id).First(job).GetErrors(); len(errs) > 0 {
-				ctx.StatusCode(iris.StatusBadRequest)
-				ctx.JSON(iris.Map{
-					"error": errs[0].Error(),
-				})
-				return
-			}
-
-			if job.Status != model.Job_Status_InProgress {
-				ctx.StatusCode(iris.StatusBadRequest)
-				ctx.JSON(iris.Map{
-					"error": "invalid operation",
-				})
-				return
-			}
-
-			cmd := task.GetCmd(job.ID)
-
-			if cmd == nil {
-				shelljob.RecoveryReport(job.ID)
-
-				job.Status = model.Job_Status_Completed
-
-				if errs := dataprovider.GetInstance().Save(job).GetErrors(); len(errs) > 0 {
-					ctx.StatusCode(iris.StatusBadRequest)
-					ctx.JSON(iris.Map{
-						"error": errs[0].Error(),
-					})
-					return
-				}
-
-				ctx.StatusCode(iris.StatusOK)
-				ctx.JSON(iris.Map{
-					"recovery": "1",
-				})
-				return
-			}
-
-			conn := socket.GetConnection(job.ID)
-
-			if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
-				shelljob.RecoveryReport(job.ID)
-
-				job.Status = model.Job_Status_Completed
-
-				if errs := dataprovider.GetInstance().Save(job).GetErrors(); len(errs) > 0 {
-					ctx.StatusCode(iris.StatusBadRequest)
-					ctx.JSON(iris.Map{
-						"error": errs[0].Error(),
-					})
-					return
-				}
-
-				msg := "Job " + job.ID + " terminate failed: " + err.Error()
-				log.Logger.Error(msg)
-				if conn != nil {
-					(*conn).Emit("console", msg)
-				}
-
-				ctx.StatusCode(iris.StatusOK)
-				ctx.JSON(iris.Map{
-					"recovery": "1",
-				})
-			} else {
-				msg := "Job " + job.ID + " send kill request success."
-				log.Logger.Info(msg)
-				if conn != nil {
-					(*conn).Emit("console", msg)
-				}
-
-				ctx.StatusCode(iris.StatusOK)
-				ctx.JSON(iris.Map{})
-			}
+			ctx.StatusCode(iris.StatusOK)
+			ctx.JSON(iris.Map{
+				"recovery": isRecover,
+			})
 		})
 
+		party.Get("/jobs", func(ctx iris.Context) {
+			page, err := ctx.URLParamInt("page")
+			if err != nil || page < 1 {
+				page = 1
+			}
+
+			pageSize, err := ctx.URLParamInt("pageSize")
+			if err != nil || pageSize < 1 {
+				pageSize = 10
+			}
+
+			keyword := ctx.URLParam("keyword")
+
+			var jobs []model.Job
+			var count int64
+
+			db := dataprovider.GetInstance().Model(&model.Job{})
+
+			if keyword != "" {
+				db = db.Where("SCENARIO_NAME LIKE ?", "%"+keyword+"%")
+			}
+
+			db.Count(&count)
+			db.Order("CREATE_TIME desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&jobs)
+
+			ctx.JSON(iris.Map{
+				"total": count,
+				"data":  jobs,
+			})
+		})
+
+		party.Post("/job/:id/report/recovery", func(ctx iris.Context) {
+			// This functionality was removed during refactoring.
+			// The new shelljob logic handles report generation automatically.
+			ctx.StatusCode(iris.StatusNotImplemented)
+			ctx.JSON(iris.Map{
+				"message": "Report recovery is no longer a manual operation and has been removed.",
+			})
+		})
+
+		party.Get("/job/:id/report/main", func(ctx iris.Context) {
+			// This functionality was removed during refactoring.
+			// Reports are accessed via static file serving.
+			ctx.StatusCode(iris.StatusNotImplemented)
+			ctx.JSON(iris.Map{
+				"message": "This API endpoint has been removed. Reports are served statically.",
+			})
+		})
+
+		party.Get("/job/:id/report/log", func(ctx iris.Context) {
+			// This functionality was removed during refactoring.
+			ctx.StatusCode(iris.StatusNotImplemented)
+			ctx.JSON(iris.Map{
+				"message": "This API endpoint has been removed.",
+			})
+		})
 	}
 }
 

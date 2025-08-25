@@ -1,62 +1,61 @@
-<kendo-dialog (close)="closeForm()">
-  <kendo-dialog-titlebar>New Test Job</kendo-dialog-titlebar>
+<h2 mat-dialog-title>New Test Job</h2>
 
-  <form novalidate [formGroup]="editForm">
-    <div class="form-group">
-      <label for="minHeap" class="control-label">xms</label>
-      <input type="text" class="k-textbox" formControlName="minHeap" />
-    </div>
-    <div class="form-group">
-      <label for="maxHeap" class="control-label">xmx</label>
-      <input type="text" class="k-textbox" formControlName="maxHeap" />
-    </div>
-    <div class="form-group" *ngIf="propertyType === 0">
-      <label for="config" class="control-label">Properties<a href="" (click)="changePropertyType($event, 1)"><span class="k-icon k-i-css" style="font-size: 25px;"></span></a></label>
-      <div style="display: inline-block">
-        <textarea kendoTextArea style="width: 200px;margin: 0px;height: 80px;" formControlName="config" ></textarea>
-      </div>
-    </div>
-    <div formArrayName="configsForm" *ngIf="propertyType === 1">
-      <label style="vertical-align: top" for="configsForm" class="control-label">Properties<a href="" (click)="changePropertyType($event, 0)"><span class="k-icon k-i-paste-plain-text" style="font-size: 25px;"></span></a></label>
-      <div style="display: inline-block">
-        <a href="" *ngIf="configsForm.controls.length === 0" (click)="addConfig($event)"><span class="k-icon k-i-plus-outline"></span></a>
-        <div *ngFor="let control of configsForm.controls; let i=index" [formGroupName]="i">
-          <div class="form-group">
-            <input type="text" class="k-textbox" formControlName="key" />
-            :
-            <input type="text" class="k-textbox" formControlName="value" />
-            <a href="" (click)="deleteConfig($event, i)"><span class="k-icon k-i-close-outline"></span></a>
-            <a href="" *ngIf="i === configsForm.controls.length - 1" (click)="addConfig($event)"><span class="k-icon k-i-plus-outline"></span></a>
-          </div>
+<mat-dialog-content>
+    <form [formGroup]="editForm" class="form-container">
+        <div class="heap-inputs">
+            <mat-form-field>
+                <mat-label>xms (e.g., 1024m)</mat-label>
+                <input matInput formControlName="minHeap">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>xmx (e.g., 2048m)</mat-label>
+                <input matInput formControlName="maxHeap">
+            </mat-form-field>
         </div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label for="executeType" class="control-label">Execute Type</label>
-      <label>
-        <input type="radio" value="0" formControlName="executeType">
-        Local
-      </label>
-      <label>
-        <input type="radio" value="1" formControlName="executeType">
-        Remote
-      </label>
-    </div>
-    <div *ngIf="editForm.value.executeType === '1'" formArrayName="remoteHostsForm">
-      <label style="vertical-align: top" for="remoteHostsForm" class="control-label">Remote Host</label>
-      <div style="display: inline-block">
-        <div *ngFor="let control of remoteHostsForm.controls; let i=index" [formGroupName]="i">
-          <div class="form-group">
-            <input type="text" class="k-textbox" formControlName="remoteHost" />
-            <a href="" *ngIf="remoteHostsForm.controls.length > 1" (click)="deleteRemoteHost($event, i)"><span class="k-icon k-i-close-outline"></span></a>
-            <a href="" *ngIf="i === remoteHostsForm.controls.length - 1" (click)="addRemoteHost($event)"><span class="k-icon k-i-plus-outline"></span></a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </form>
-  <kendo-dialog-actions>
-    <button class="k-button" (click)="onCancel($event)">Cancel</button>
-    <button class="k-button k-primary" [disabled]="!editForm.valid" (click)="onSave($event)">Save</button>
-  </kendo-dialog-actions>
-</kendo-dialog>
+
+        <mat-radio-group formControlName="executeType">
+            <mat-radio-button value="0">Local</mat-radio-button>
+            <mat-radio-button value="1">Remote</mat-radio-button>
+        </mat-radio-group>
+
+        <mat-tab-group>
+            <mat-tab label="Properties">
+                <div formArrayName="configs">
+                    <div *ngFor="let group of configs.controls; let i=index" [formGroupName]="i" class="property-row">
+                        <mat-form-field>
+                            <mat-label>Key</mat-label>
+                            <input matInput formControlName="key">
+                        </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>Value</mat-label>
+                            <input matInput formControlName="value">
+                        </mat-form-field>
+                        <button mat-icon-button (click)="deleteConfig(i)">
+                            <mat-icon>remove_circle</mat-icon>
+                        </button>
+                    </div>
+                    <button mat-stroked-button (click)="addConfig()">Add Property</button>
+                </div>
+            </mat-tab>
+            <mat-tab label="Remote Hosts" *ngIf="editForm.value.executeType === '1'">
+                <div formArrayName="remoteHosts">
+                    <div *ngFor="let group of remoteHosts.controls; let i=index" [formGroupName]="i" class="host-row">
+                         <mat-form-field>
+                            <mat-label>Host</mat-label>
+                            <input matInput formControlName="remoteHost">
+                        </mat-form-field>
+                        <button mat-icon-button (click)="deleteRemoteHost(i)" *ngIf="remoteHosts.controls.length > 1">
+                            <mat-icon>remove_circle</mat-icon>
+                        </button>
+                    </div>
+                    <button mat-stroked-button (click)="addRemoteHost()">Add Host</button>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button [mat-dialog-close]="getSaveData()" [disabled]="!editForm.valid">Save</button>
+</mat-dialog-actions>

@@ -7,9 +7,9 @@ metadata:
 spec:
   ports:
     - name: http
-      port: 10080
+      port: 8088
       protocol: TCP
-      targetPort: 10080
+      targetPort: 8088
       nodePort: 32000
   selector:
     app: jt

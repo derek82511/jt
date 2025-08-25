@@ -1,6 +1,7 @@
 package config
 
 const JMETER_ROOT_FOLDER = "/root/jmeter"
+// const JMETER_ROOT_FOLDER = "/Users/derekcychang/Documents/projects/00_unknown/github/jt/jmeter"
 
 // const JMETER_ROOT_FOLDER = "[absolute path to your jmeter root folder inside your project]"
 
@@ -11,4 +12,4 @@ const JMETER_REPORTS_FOLDER = JMETER_ROOT_FOLDER + "/reports"
 const JMETER_LOG_FOLDER = JMETER_ROOT_FOLDER + "/logs"
 const JMETER_DATA_FOLDER = JMETER_ROOT_FOLDER + "/data"
 
-const JMETER_SERVICE_PORT = "10080"
+const JMETER_SERVICE_PORT = "8088"

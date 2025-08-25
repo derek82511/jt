@@ -2,14 +2,10 @@ package web
 
 import (
 	"derek82511/jt/config"
-	"derek82511/jt/service/log"
-	"strings"
-	"time"
 
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/context"
-	requestLogger "github.com/kataras/iris/middleware/logger"
-	"github.com/kataras/iris/middleware/recover"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/logger"
+	"github.com/kataras/iris/v12/middleware/recover"
 )
 
 func SetupRecover(app *iris.Application) {
@@ -17,29 +13,16 @@ func SetupRecover(app *iris.Application) {
 }
 
 func SetupRequestLogger(app *iris.Application) {
-	app.Use(requestLogger.New(requestLogger.Config{
-		Status:  true,
-		IP:      true,
-		Method:  true,
-		Path:    true,
-		Query:   false,
-		Columns: false,
-		LogFunc: func(endTime time.Time, latency time.Duration, status, ip, method, path string, message interface{}, headerMessage interface{}) {
-			endTimeFormatted := endTime.Format("2006/01/02 - 15:04:05")
-			output := requestLogger.Columnize(endTimeFormatted, latency, status, ip, method, path, message, headerMessage)
-
-			log.WebLogger.Info(strings.Split(output, "\n")[1])
-		},
-	}))
+	app.Use(logger.New())
 }
 
 func SetupSite(app *iris.Application) {
-	reporthandlers := &app.StaticWeb("/jmeter/reports", config.JMETER_REPORTS_FOLDER).Handlers
-	*reporthandlers = append(context.Handlers{func(ctx iris.Context) {
-		ctx.Request().URL.Path = strings.Replace(ctx.Request().URL.Path, "/index.html", "/main.html", -1)
-		ctx.Next()
-	}}, (*reporthandlers)...)
+	app.HandleDir("/jmeter/reports", config.JMETER_REPORTS_FOLDER)
 
-	spa := app.StaticHandler(config.JMETER_SITE_FOLDER, false, false)
-	app.SPA(spa)
+	// Serve the Angular frontend's static files with SPA support.
+	// This will serve "index.html" when a file is not found.
+	app.HandleDir("/", config.JMETER_SITE_FOLDER, iris.DirOptions{
+		IndexName: "index.html",
+		SPA:       true,
+	})
 }

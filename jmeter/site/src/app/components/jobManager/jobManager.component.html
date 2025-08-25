@@ -1,45 +1,81 @@
-<h3 class="title">Test Job</h3>
-<kendo-grid [kendoGridBinding]="jobs" [pageSize]="gridState.take" [skip]="gridState.skip" [pageable]="true" [resizable]="true"
-  [sortable]="true" (dataStateChange)="onStateChange($event)">
-  <ng-template kendoGridToolbarTemplate>
-    <button class="k-button reload-btn" (click)="getJobs()"><span class="k-icon k-i-reload-sm"></span></button>
-  </ng-template>
-  <kendo-grid-column field="scenarioName" title="Scenario Name" width="12%">
-  </kendo-grid-column>
-  <kendo-grid-column field="createTime" title="Create Time" width="15%">
-  </kendo-grid-column>
-  <kendo-grid-column title="Report" width="10%">
-    <ng-template kendoGridCellTemplate let-dataItem>
-      <a *ngIf="dataItem.status === '2'" style="color: #0073a6;" href="" (click)="report($event, dataItem)">View Report</a>
-    </ng-template>
-  </kendo-grid-column>
-  <kendo-grid-column title="Heap Size" width="15%">
-    <ng-template kendoGridCellTemplate let-dataItem>
-      xms={{dataItem.minHeap}} xmx={{dataItem.maxHeap}}
-    </ng-template>
-  </kendo-grid-column>
-  <kendo-grid-column title="Custom Properties" width="13%">
-    <ng-template kendoGridCellTemplate let-dataItem>
-      <p [innerHTML]="dataItem.config | jsonFilter"></p>
-    </ng-template>
-  </kendo-grid-column>
-  <kendo-grid-column title="Remote Host" width="15%">
-    <ng-template kendoGridCellTemplate let-dataItem>
-      <p [innerHTML]="dataItem.remoteHost | commaFilter"></p>
-    </ng-template>
-  </kendo-grid-column>
-  <kendo-grid-column field="status" title="Status" width="10%">
-    <ng-template kendoGridCellTemplate let-dataItem>
-      <div [ngSwitch]="dataItem.status">
-        <p *ngSwitchCase="0">Unexecuted</p>
-        <p *ngSwitchCase="1">Executing</p>
-        <p *ngSwitchCase="2">Completed</p>
-      </div>
-    </ng-template>
-  </kendo-grid-column>
-  <kendo-grid-command-column title="" width="10%">
-    <ng-template kendoGridCellTemplate let-dataItem>
-      <button class="k-button command-btn" (click)="jobConsole(dataItem)">Console</button>
-    </ng-template>
-  </kendo-grid-command-column>
-</kendo-grid>
+<div class="page-container">
+    <div class="page-header">
+        <h3 class="page-title">Test Job</h3>
+        <div class="header-actions">
+            <button mat-icon-button (click)="getJobs()">
+                <mat-icon>refresh</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+
+            <!-- Scenario Name Column -->
+            <ng-container matColumnDef="scenarioName">
+                <th mat-header-cell *matHeaderCellDef> Scenario Name </th>
+                <td mat-cell *matCellDef="let element"> {{element.scenarioName}} </td>
+            </ng-container>
+
+            <!-- Create Time Column -->
+            <ng-container matColumnDef="createTime">
+                <th mat-header-cell *matHeaderCellDef> Create Time </th>
+                <td mat-cell *matCellDef="let element"> {{element.createTime}} </td>
+            </ng-container>
+
+            <!-- Report Column -->
+            <ng-container matColumnDef="report">
+                <th mat-header-cell *matHeaderCellDef> Report </th>
+                <td mat-cell *matCellDef="let element">
+                    <a *ngIf="element.status === '2'" href="#" (click)="report($event, element)">View Report</a>
+                </td>
+            </ng-container>
+
+            <!-- Heap Size Column -->
+            <ng-container matColumnDef="heapSize">
+                <th mat-header-cell *matHeaderCellDef> Heap Size </th>
+                <td mat-cell *matCellDef="let element"> xms={{element.minHeap}} xmx={{element.maxHeap}} </td>
+            </ng-container>
+
+            <!-- Properties Column -->
+            <ng-container matColumnDef="properties">
+                <th mat-header-cell *matHeaderCellDef> Properties </th>
+                <td mat-cell *matCellDef="let element">
+                    <p [innerHTML]="element.config | jsonFilter"></p>
+                </td>
+            </ng-container>
+
+            <!-- Remote Host Column -->
+            <ng-container matColumnDef="remoteHost">
+                <th mat-header-cell *matHeaderCellDef> Remote Host </th>
+                <td mat-cell *matCellDef="let element">
+                     <p [innerHTML]="element.remoteHost | commaFilter"></p>
+                </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef> Status </th>
+                <td mat-cell *matCellDef="let element">
+                    <div [ngSwitch]="element.status">
+                        <p *ngSwitchCase="'0'">Unexecuted</p>
+                        <p *ngSwitchCase="'1'">Executing</p>
+                        <p *ngSwitchCase="'2'">Completed</p>
+                    </div>
+                </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let element" align="right" class="action-cell">
+                    <button mat-stroked-button color="primary" (click)="jobConsole(element)">Console</button>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10, 20, 50]" showFirstLastButtons></mat-paginator>
+    </div>
+</div>

@@ -1,6 +1,6 @@
 export class Constant {
-    public static Version = "v1.3.2"
+    public static Version = "v2.0.0"
 
-    // public static Host = "http://localhost:10080"
+    // public static Host = "http://localhost:8088"
     public static Host = ""
 }

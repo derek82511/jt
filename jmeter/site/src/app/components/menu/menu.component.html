@@ -1,5 +1,6 @@
-<div class="pane-content">
-    <ul>
-        <li *ngFor='let menu of menus' routerLink="{{menu.url}}">{{menu.name}}</li>
-    </ul>
-</div>
+<mat-nav-list>
+    <a mat-list-item *ngFor="let menu of menus" [routerLink]="menu.url" routerLinkActive="active-list-item">
+        <mat-icon matListItemIcon>{{ menu.icon }}</mat-icon>
+        <div matListItemTitle>{{ menu.name }}</div>
+    </a>
+</mat-nav-list>

@@ -1,26 +1,38 @@
 package socket
 
-import "github.com/kataras/iris/websocket"
+import (
+	"sync"
 
-var wsJobConnectionMap *map[string]*websocket.Connection
+	"github.com/gorilla/websocket"
+)
 
-func init() {
-	wsJobConnectionMap = &map[string]*websocket.Connection{}
+var (
+	connections = make(map[string]*websocket.Conn)
+	mu          sync.Mutex
+)
+
+func SetConnection(id string, c *websocket.Conn) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Close any existing connection for this ID
+	if conn, ok := connections[id]; ok {
+		conn.Close()
+	}
+	connections[id] = c
 }
 
-func SetConnection(jobID string, conn *websocket.Connection) {
-	ReleaseConnection(jobID)
-	(*wsJobConnectionMap)[jobID] = conn
+func GetConnection(id string) *websocket.Conn {
+	mu.Lock()
+	defer mu.Unlock()
+	return connections[id]
 }
 
-func GetConnection(jobID string) *websocket.Connection {
-	return (*wsJobConnectionMap)[jobID]
-}
-
-func ReleaseConnection(jobID string) {
-	conn := GetConnection(jobID)
-	if conn != nil {
-		(*conn).Disconnect()
-		delete((*wsJobConnectionMap), jobID)
+func RemoveConnection(id string) {
+	mu.Lock()
+	defer mu.Unlock()
+	if conn, ok := connections[id]; ok {
+		conn.Close()
+		delete(connections, id)
 	}
 }

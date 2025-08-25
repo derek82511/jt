@@ -1,181 +1,116 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { Validators, FormGroup, FormControl, FormArray } from '@angular/forms';
+import { Component, Inject } from '@angular/core';
+import { Validators, FormGroup, FormControl, FormArray, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatDialogModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatRadioModule,
+        MatTabsModule,
+        MatIconModule
+    ],
     selector: 'app-scenarioJobEditForm',
     templateUrl: './scenarioJobEditForm.component.html',
     styleUrls: ['./scenarioJobEditForm.component.css']
 })
 export class ScenarioJobEditFormComponent {
-    public configsForm = new FormArray([]);
-
-    public remoteHostsForm: FormArray;
-
     public editForm: FormGroup;
-
-    public propertyType: number = 0;
-
-    @Input() scenarioId: string;
-
-    @Output() cancel: EventEmitter<any> = new EventEmitter();
-    @Output() save: EventEmitter<any> = new EventEmitter();
-
-    constructor() {
-        let remoteHost = localStorage.getItem('remoteHost');
+    
+    constructor(@Inject(MAT_DIALOG_DATA) public data: { scenarioId: string }) {
+        const remoteHost = localStorage.getItem('remoteHost');
+        let initialHosts: FormGroup[] = [];
+        let executeType = '0';
 
         if (remoteHost) {
-            let hosts = remoteHost.split(';');
-
-            this.remoteHostsForm = new FormArray([]);
-
-            hosts.forEach(host => {
-                if (host) {
-                    this.remoteHostsForm.push(new FormGroup({
-                        'remoteHost': new FormControl(host),
-                    }));
-                }
-            });
-
-            this.editForm = new FormGroup({
-                'minHeap': new FormControl('', Validators.required),
-                'maxHeap': new FormControl('', Validators.required),
-                'config': new FormControl('{}'),
-                'configsForm': this.configsForm,
-                'executeType': new FormControl('1'),
-                'remoteHostsForm': this.remoteHostsForm,
-            });
-        } else {
-            this.remoteHostsForm = new FormArray([new FormGroup({
-                'remoteHost': new FormControl(''),
-            })]);
-
-            this.editForm = new FormGroup({
-                'minHeap': new FormControl('', Validators.required),
-                'maxHeap': new FormControl('', Validators.required),
-                'config': new FormControl('{}'),
-                'configsForm': this.configsForm,
-                'executeType': new FormControl('0'),
-                'remoteHostsForm': this.remoteHostsForm,
-            });
-        }
-    }
-
-    public onSave(e): void {
-        e.preventDefault();
-
-        if (this.propertyType !== 0) {
-            this.changePropertyType(e, 0);
-        }
-
-        try {
-            this.editForm.value['config'] = JSON.parse(this.editForm.value['config']);
-        } catch (e) {
-            this.editForm.value['config'] = {};
-        }
-
-        this.configsForm = new FormArray([]);
-
-        for (let key in this.editForm.value['config']) {
-            this.configsForm.push(new FormGroup({
-                'key': new FormControl(key),
-                'value': new FormControl(this.editForm.value['config'][key])
-            }));
-        }
-
-        this.editForm.setControl('configsForm', this.configsForm);
-
-        this.editForm.value['scenarioId'] = this.scenarioId;
-
-        for (let i = 0; i < this.editForm.value['configsForm'].length; i++) {
-            if (this.editForm.value['configsForm'][i].key === '' || this.editForm.value['configsForm'][i].value === '') {
-                //
-                return;
+            const hosts = remoteHost.split(';').filter(h => h);
+            if (hosts.length > 0) {
+                executeType = '1';
+                initialHosts = hosts.map(host => new FormGroup({ 'remoteHost': new FormControl(host) }));
             }
         }
 
-        if (this.editForm.value['executeType'] === '0') {
-            this.editForm.value['remoteHostsForm'] = [];
-        } else {
-            for (let i = 0; i < this.editForm.value['remoteHostsForm'].length; i++) {
-                if (this.editForm.value['remoteHostsForm'][i].remoteHost === '') {
-                    //
-                    return;
-                }
-            }
+        if (initialHosts.length === 0) {
+            initialHosts.push(new FormGroup({ 'remoteHost': new FormControl('') }));
         }
-
-        this.save.emit(this.editForm.value);
+        
+        this.editForm = new FormGroup({
+            'minHeap': new FormControl('', Validators.required),
+            'maxHeap': new FormControl('', Validators.required),
+            'configs': new FormArray([]),
+            'executeType': new FormControl(executeType),
+            'remoteHosts': new FormArray(initialHosts),
+        });
     }
 
-    public onCancel(e): void {
-        e.preventDefault();
-
-        this.closeForm();
+    get configs(): FormArray {
+        return this.editForm.get('configs') as FormArray;
     }
 
-    public closeForm(): void {
-        this.cancel.emit();
-    }
-
-    public changePropertyType(e, type): void {
-        e.preventDefault();
-
-        this.propertyType = type;
-
-        if (this.propertyType === 0) {
-            let configData = {};
-
-            for (let i = 0; i < this.editForm.value['configsForm'].length; i++) {
-                configData[this.editForm.value['configsForm'][i].key] = this.editForm.value['configsForm'][i].value;
-            }
-
-            this.editForm.value['config'] = JSON.stringify(configData, null, 4);
-
-            this.editForm.reset(this.editForm.value);
-        } else {
-            try {
-                this.editForm.value['config'] = JSON.parse(this.editForm.value['config']);
-            } catch (e) {
-                this.editForm.value['config'] = {};
-            }
-
-            this.configsForm = new FormArray([]);
-
-            for (let key in this.editForm.value['config']) {
-                this.configsForm.push(new FormGroup({
-                    'key': new FormControl(key),
-                    'value': new FormControl(this.editForm.value['config'][key])
-                }));
-            }
-
-            this.editForm.setControl('configsForm', this.configsForm);
-        }
-    }
-
-    public addConfig(e): void {
-        e.preventDefault();
-
-        this.configsForm.push(new FormGroup({
-            'key': new FormControl(''),
-            'value': new FormControl(''),
+    addConfig(): void {
+        this.configs.push(new FormGroup({
+            'key': new FormControl('', Validators.required),
+            'value': new FormControl('', Validators.required),
         }));
     }
-    public deleteConfig(e, index): void {
-        e.preventDefault();
 
-        this.configsForm.removeAt(index);
+    deleteConfig(index: number): void {
+        this.configs.removeAt(index);
     }
-
-    public addRemoteHost(e): void {
-        e.preventDefault();
-
-        this.remoteHostsForm.push(new FormGroup({
+    
+    get remoteHosts(): FormArray {
+        return this.editForm.get('remoteHosts') as FormArray;
+    }
+    
+    addRemoteHost(): void {
+        this.remoteHosts.push(new FormGroup({
             'remoteHost': new FormControl(''),
         }));
     }
-    public deleteRemoteHost(e, index): void {
-        e.preventDefault();
 
-        this.remoteHostsForm.removeAt(index);
+    deleteRemoteHost(index: number): void {
+        this.remoteHosts.removeAt(index);
+    }
+    
+    public getSaveData() {
+        if (!this.editForm.valid) {
+            return null;
+        }
+
+        const formValue = this.editForm.value;
+        const result: any = {
+            scenarioId: this.data.scenarioId,
+            minHeap: formValue.minHeap,
+            maxHeap: formValue.maxHeap,
+            executeType: formValue.executeType,
+            config: {},
+            remoteHost: ''
+        };
+
+        result.config = formValue.configs.reduce((acc: any, curr: any) => {
+            acc[curr.key] = curr.value;
+            return acc;
+        }, {});
+        
+        if (formValue.executeType === '1') {
+            result.remoteHost = formValue.remoteHosts
+                .map((host: any) => host.remoteHost)
+                .filter((host: any) => host)
+                .join(',');
+        }
+
+        return result;
     }
 }

@@ -3,7 +3,7 @@ package model
 import "time"
 
 type Job struct {
-	ID           string     `gorm:"column:ID;PRIMARY_KEY;AUTO_INCREMENT"`
+	ID           string     `gorm:"column:ID;PRIMARY_KEY"`
 	ScenarioID   string     `gorm:"column:SCENARIO_ID"`
 	ScenarioName string     `gorm:"column:SCENARIO_Name"`
 	MinHeap      string     `gorm:"column:MIN_HEAP"`
@@ -13,7 +13,9 @@ type Job struct {
 	ExecuteType  int        `gorm:"column:EXECUTE_TYPE"`
 	RemoteHost   string     `gorm:"column:REMOTE_HOST"`
 	ReportPath   string     `gorm:"column:REPORT_PATH"`
+	Pid          int        `gorm:"column:PID"`
 	CreateTime   *time.Time `gorm:"column:CREATE_TIME"`
+	FinishTime   *time.Time `gorm:"column:FINISH_TIME"`
 }
 
 const (

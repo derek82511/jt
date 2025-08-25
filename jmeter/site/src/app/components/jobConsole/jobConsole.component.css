@@ -56,3 +56,27 @@ kendo-splitter-pane {
     overflow-y: scroll;
     height: 55vh;
 }
+
+.console-output {
+    margin-top: 1em;
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+    padding: 1em;
+    height: 400px;
+    overflow-y: scroll;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.console-output p {
+    margin: 0 0 5px 0;
+}
+
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}

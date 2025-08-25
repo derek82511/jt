@@ -4,7 +4,7 @@ JT (JMeter Tool) is a web application which packages the Apache JMeter open sour
 
 JT makes it very convenience to run jmeter script. You can easily upload your jmeter script(.jmx), run it, and check the reports on the web.
 
-This image use apache-jmeter-5.1 and openjdk-8.
+This image use apache-jmeter-5.6.3 and temurin-openjdk-21.
 
 Docker Hub: [https://hub.docker.com/r/derek82511/jt](https://hub.docker.com/r/derek82511/jt)
 
@@ -28,17 +28,17 @@ Create a directory named jmeter includes 4 path (scripts, reports, logs, data).
 
 ```console
 docker run -it \
-  -p 10080:10080 \
+  -p 8088:8088 \
   -e "TZ=Asia/Taipei" \
   -v $PWD/jmeter/scripts:/root/jmeter/scripts \
   -v $PWD/jmeter/reports:/root/jmeter/reports \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.2
+  derek82511/jt:2.0.0
 ```
 
-Open `http://localhost:10080` or `http://host-ip:10080` in your browser.
+Open `http://localhost:8088` or `http://host-ip:8088` in your browser.
 
 ## Using host networking
 
@@ -58,18 +58,18 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.2
+  derek82511/jt:2.0.0
 ```
 
-Open `http://localhost:10080` or `http://host-ip:10080` in your browser.
+Open `http://localhost:8088` or `http://host-ip:8088` in your browser.
 
 ## Remote Testing
 
 Support since v1.1.0.
 
 You must prepare your JMeter worker server and start it. (Or you can use [jt-worker](https://hub.docker.com/r/derek82511/jt-worker) in your worker server)
-* Running exactly the same version of JMeter (apache-jmeter-5.1).
-* Using the same version of Java on all systems (openjdk-8). Using different versions of Java may work but is discouraged.
+* Running exactly the same version of JMeter (apache-jmeter-5.6.3).
+* Using the same version of Java on all systems (temurin-openjdk-21). Using different versions of Java may work but is discouraged.
 
 Following configuration is required in jmeter.properties file:
 
@@ -79,7 +79,7 @@ server.rmi.ssl.disable=true
 
 ```console
 docker run -it \
-  -p 10080:10080 \
+  -p 8088:8088 \
   -p 10090:10090 \
   -p 10091:10091 \
   -p 10092:10092 \
@@ -90,7 +90,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.2
+  derek82511/jt:2.0.0
 ```
 
 or
@@ -105,7 +105,7 @@ docker run -it \
   -v $PWD/jmeter/logs:/root/jmeter/logs \
   -v $PWD/jmeter/data:/root/jmeter/data \
   --name jt \
-  derek82511/jt:1.3.2
+  derek82511/jt:2.0.0
 ```
 
 Then, you can assign the worker server's ip:port when creating job with remote mode.

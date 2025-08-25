@@ -5,3 +5,10 @@
 .command-btn {
     margin: 1em 0.5em;
 }
+
+.action-cell {
+    /* Add some space between the buttons */
+    gap: 8px;
+    display: flex;
+    justify-content: flex-end;
+}

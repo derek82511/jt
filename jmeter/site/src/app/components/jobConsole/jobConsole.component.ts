@@ -1,135 +1,161 @@
 import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { Constant } from '../../app.constant';
-
 import { Job } from '../../models/Job';
-
 import { JobService } from '../../services/JobService';
+import { ScenarioJobAlertComponent } from '../scenarioJobAlert/scenarioJobAlert.component';
+import { JsonPipe, CommaPipe } from '../../pipes/utilPipe';
 
 @Component({
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatDialogModule,
+        MatButtonModule,
+        MatTabsModule,
+        MatProgressSpinnerModule,
+        JsonPipe,
+        CommaPipe
+    ],
     selector: 'app-jobConsole',
     templateUrl: './jobConsole.component.html',
     styleUrls: ['./jobConsole.component.css']
 })
 export class JobConsoleComponent implements OnInit {
-    private socket: any;
+    private socket: WebSocket | null = null;
 
-    public job: Job;
+    public job!: Job;
 
-    public lines = [];
+    public lines: string[] = [];
 
     public firstStartup = false;
 
-    public alertActive = false;
-    public alertJobId: string;
+    @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
-    @ViewChild('scrollContainer') private scrollContainer: ElementRef;
-
-    constructor(private activatedRoute: ActivatedRoute, private jobService: JobService) {
-
-    }
+    constructor(
+        private activatedRoute: ActivatedRoute,
+        private jobService: JobService,
+        public dialog: MatDialog
+    ) { }
 
     ngOnInit() {
-        var id = this.activatedRoute.snapshot.paramMap.get('id');
-
-        this.getJob(id);
+        const id = this.activatedRoute.snapshot.paramMap.get('id');
+        if (id) {
+            this.getJob(id);
+        }
     }
 
     getJob(id: string): void {
         this.jobService.getJob(id).subscribe((job) => {
-            this.job = job;
+            if (job) {
+                this.job = job;
+            }
         });
     }
 
     run(): void {
-        this.socket = new window['Ws'](this.getWsUrl())
+        this.socket = new WebSocket(this.getWsUrl());
 
-        this.socket.OnConnect(() => {
+        this.socket.onopen = (event) => {
             console.log("Status: Connected");
+            const registerMsg = { event: "register", payload: this.job.id };
+            this.socket?.send(JSON.stringify(registerMsg));
+        };
 
-            this.socket.Emit('register', this.job.id);
-        });
-
-        this.socket.OnDisconnect(() => {
+        this.socket.onclose = (event) => {
             console.log("Status: Disconnected");
-        });
+        };
 
-        this.socket.On("onRegister", (msg) => {
-            if (msg === 'ok') {
-                this.jobService.runJob(this.job.id).subscribe(() => {
-                    this.job.status = "1";
-                });
+        this.socket.onerror = (error) => {
+            console.error("WebSocket Error:", error);
+        };
+
+        this.socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+
+            switch (msg.event) {
+                case "onRegister":
+                    if (msg.payload === 'ok') {
+                        this.jobService.runJob(this.job.id).subscribe(() => {
+                            this.job.status = "1";
+                        });
+                    }
+                    break;
+                case "console":
+                    this.lines.push(msg.payload);
+                    this.scrollToBottom();
+                    break;
+                case "finish":
+                    if (msg.payload === 'ok') {
+                        this.job.status = "2";
+                        this.firstStartup = true;
+                    }
+                    break;
             }
-        });
-
-        this.socket.On("console", (consoleLine) => {
-            this.lines.push(consoleLine)
-            setTimeout(() => {
-                try {
-                    this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight;
-                } catch (err) { }
-            })
-        });
-
-        this.socket.On("finish", (msg) => {
-            if (msg === 'ok') {
-                this.job.status = "2";
-                this.firstStartup = true;
-            }
-        });
+        };
     }
 
     terminate(): void {
-        this.jobService.terminateJob(this.job.id).subscribe((result) => {
-            if (result.recovery === "1") {
+        this.jobService.terminateJob(this.job.id).subscribe((result: { recovery: boolean }) => {
+            if (result.recovery) {
                 this.job.status = "2";
                 this.firstStartup = true;
             }
         });
+        this.socket?.close();
     }
 
     restart(): void {
-        let params = {
+        let configData = {};
+        try {
+            // The config from the job object is a JSON string; parse it back to an object.
+            if (this.job.config) {
+                configData = JSON.parse(this.job.config);
+            }
+        } catch (e) {
+            console.error('Could not parse job config JSON:', e);
+            // Optionally, show an error to the user.
+        }
+
+        const params = {
             scenarioId: this.job.scenarioId,
-            config: this.job.config,
+            config: configData,
             maxHeap: this.job.maxHeap,
             minHeap: this.job.minHeap,
-            executeType: parseInt(this.job.executeType),
+            executeType: parseInt(this.job.executeType, 10),
             remoteHost: this.job.remoteHost,
         };
 
         this.jobService.createJob(params)
             .subscribe((result) => {
-                this.alertJobId = result.id;
-                this.alertActive = true;
+                if (result) {
+                    this.dialog.open(ScenarioJobAlertComponent, {
+                        data: { jobId: result.id }
+                    });
+                }
             });
-    }
-
-    cancelAlertHandler() {
-        this.alertJobId = null;
-        this.alertActive = false;
     }
 
     report(): void {
         window.open(Constant.Host + this.job.reportPath, '_blank');
     }
 
-    private getWsUrl(): string {
-        if (Constant.Host === "") {
-            var loc = window.location, new_uri;
-            if (loc.protocol === "https:") {
-                new_uri = "wss:";
-            } else {
-                new_uri = "ws:";
-            }
-            new_uri += "//" + loc.host;
-            new_uri += "/echo";
-
-            return new_uri
-        } else {
-            return Constant.Host.replace("http", "ws") + "/echo"
-        }
+    private scrollToBottom(): void {
+        setTimeout(() => {
+            try {
+                this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight;
+            } catch (err) { }
+        }, 100);
     }
 
+    private getWsUrl(): string {
+        const wsHost = Constant.Host.replace("http", "ws");
+        return `${wsHost}/ws`;
+    }
 }

@@ -1,20 +1,17 @@
 {
-  "compileOnSave": false,
   "compilerOptions": {
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
     "sourceMap": true,
-    "declaration": false,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "target": "es5",
-    "typeRoots": [
-      "node_modules/@types"
-    ],
+    "target": "es2022",
     "lib": [
-      "es2017",
+      "es2022",
       "dom"
-    ]
+    ],
+    "skipLibCheck": true
   }
 }
